@@ -106,7 +106,7 @@ footer { text-align: center; color: var(--muted); margin-top: 36px; font-size: 0
 }
 
 /* ================= admin ================= */
-.admin .wrap { max-width: 900px; }
+.admin .wrap { max-width: 1080px; }
 .admin h1 { font-size: clamp(2.2rem, 7vw, 3.4rem); }
 .admin h2 { font-size: 1.7rem; }
 .admin .card p.help { color: var(--muted); margin: 0 0 14px; }

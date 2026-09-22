@@ -218,17 +218,23 @@
   }
 
   // ---------- results ----------
-  function mailto(p, link) {
-    var subject = 'Hemlig tomte ' + state.year + ' 🎅';
-    var body = 'Hej ' + p.name + '!\n\n' +
-      'Lottningen till årets hemliga tomte är klar. Klicka på länken för att se vem du ska köpa julklapp till:\n\n' +
-      link + '\n\n' +
-      'Max ' + MAX_SEK + ' kr. Håll det hemligt och dela inte länken!\n\nGod jul! 🎄';
-    return 'mailto:' + encodeURIComponent(p.email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  function emailText(p, link) {
+    return {
+      subject: 'Hemlig tomte ' + state.year + ' 🎅',
+      body: 'Hej ' + p.name + '!\n\n' +
+        'Lottningen till årets hemliga tomte är klar. Klicka på länken för att se vem du ska köpa julklapp till:\n\n' +
+        link + '\n\n' +
+        'Max ' + MAX_SEK + ' kr. Håll det hemligt och dela inte länken!\n\nGod jul! 🎄'
+    };
   }
 
-  function copy(text, label) {
-    var done = function () { setMsg('resultMsg', 'Länken till ' + label + ' är kopierad.', 'ok'); };
+  function mailto(p, link) {
+    var m = emailText(p, link);
+    return 'mailto:' + encodeURIComponent(p.email) + '?subject=' + encodeURIComponent(m.subject) + '&body=' + encodeURIComponent(m.body);
+  }
+
+  function copy(text, doneMsg) {
+    var done = function () { setMsg('resultMsg', doneMsg, 'ok'); };
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
     } else { fallbackCopy(text); done(); }
@@ -268,11 +274,18 @@
         tdLink.appendChild(inp);
         var acts = document.createElement('div'); acts.className = 'actions';
         var c = document.createElement('button');
-        c.type = 'button'; c.className = 'btn small'; c.textContent = '📋 Kopiera';
-        c.addEventListener('click', function () { copy(link, p.name); });
+        c.type = 'button'; c.className = 'btn small'; c.textContent = '📋 Kopiera länk';
+        c.addEventListener('click', function () { copy(link, 'Länken till ' + p.name + ' är kopierad.'); });
+        var cm = document.createElement('button');
+        cm.type = 'button'; cm.className = 'btn small'; cm.textContent = '📝 Kopiera mejl';
+        cm.addEventListener('click', function () {
+          var m = emailText(p, link);
+          copy(m.body, 'Mejlet till ' + p.name + ' är kopierat. Klistra in det i ditt mejlprogram. Till: ' +
+            p.email + '. Ämne: ' + m.subject);
+        });
         var m = document.createElement('a');
         m.className = 'btn small primary'; m.textContent = '✉️ Mejla'; m.href = mailto(p, link);
-        acts.append(c, m);
+        acts.append(c, cm, m);
         tdAct.appendChild(acts);
       }
       tr.append(tdName, tdRecv, tdLink, tdAct);

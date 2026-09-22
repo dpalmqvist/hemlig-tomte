@@ -58,6 +58,13 @@
     const mail = $('resultBody').rows[0].querySelector('a').href;
     check('mailto has recipient + link', mail.startsWith('mailto:asa%40ex.se?subject=') && mail.includes(encodeURIComponent(link)));
     check('no stale warning', $('staleMsg').textContent === '');
+    // "Kopiera mejl" copies the full email body
+    let copied = null;
+    Object.defineProperty(f.contentWindow.navigator, 'clipboard', { configurable: true, value: { writeText: t => { copied = t; return Promise.resolve(); } } });
+    [...$('resultBody').rows[0].querySelectorAll('button')].find(b => /Kopiera mejl/.test(b.textContent)).click();
+    await sleep(50);
+    check('copy email puts full message on clipboard', copied && copied.startsWith('Hej Farmor Åsa!') && copied.includes(link) && copied.includes('500 kr'), copied);
+    check('copy email status shows address and subject', /asa@ex\.se/.test($('resultMsg').textContent) && /Ämne: Hemlig tomte 2026/.test($('resultMsg').textContent), $('resultMsg').textContent);
 
     // stale detection
     $('newName').value = 'Kalle'; $('newEmail').value = 'kalle@ex.se'; $('addForm').requestSubmit();
