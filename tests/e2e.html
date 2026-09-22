@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="sv"><head><meta charset="utf-8"><title>E2E</title></head>
+<body>
+<!-- Serve the project root over http and open tests/e2e.html. WARNING: clears the admin state for this origin. -->
+<pre id="out">running…</pre>
+<iframe id="f" style="width:1000px;height:800px"></iframe>
+<script>
+(async function () {
+  const out = [], f = document.getElementById('f');
+  let pass = 0, fail = 0;
+  const check = (name, cond, extra) => { cond ? pass++ : fail++; out.push((cond ? 'PASS ' : 'FAIL ') + name + (extra !== undefined && !cond ? '  -> ' + JSON.stringify(extra) : '')); document.getElementById('out').textContent = out.join('\n'); };
+  const load = url => new Promise(r => { out.push('loading ' + url); f.src = url; const t = setInterval(() => { try { const d = f.contentDocument; if (d && d.readyState !== 'loading' && d.URL.includes(url.replace('../', '').split('#')[0]) && d.getElementById('year')) { clearInterval(t); r(f.contentWindow); } } catch (e) {} }, 50); });
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const $ = id => f.contentDocument.getElementById(id);
+  const state = () => JSON.parse(f.contentWindow.localStorage.getItem('hemlig-tomte-admin-v1'));
+  try {
+    localStorage.removeItem('hemlig-tomte-admin-v1');
+    let w = await load('../admin.html');
+    const people = [['Farmor Åsa', 'asa@ex.se'], ['Björn', 'BJORN@ex.se'], ['Märta', 'marta@ex.se'], ['Olle', 'olle@ex.se'], ['Lisa', 'lisa@ex.se']];
+    for (const [n, e] of people) { $('newName').value = n; $('newEmail').value = e; $('addForm').requestSubmit(); }
+    check('5 people added', state().people.length === 5 && $('peopleBody').rows.length === 5);
+    check('email normalized', state().people[1].email === 'bjorn@ex.se');
+    $('newName').value = 'Dubbel'; $('newEmail').value = 'olle@ex.se'; $('addForm').requestSubmit();
+    check('duplicate email rejected', state().people.length === 5 && /finns redan/.test($('addMsg').textContent));
+    $('newName').value = 'X'; $('newEmail').value = 'inte-en-adress'; $('addForm').requestSubmit();
+    check('bad email rejected', state().people.length === 5 && $('addMsg').classList.contains('error'));
+
+    // last year: Åsa bought for Björn
+    const sel = $('peopleBody').rows[0].querySelector('select');
+    sel.value = 'bjorn@ex.se'; sel.dispatchEvent(new Event('change'));
+    check('last year saved', state().people[0].lastYear === 'bjorn@ex.se');
+    // exclusion Märta <-> Olle
+    $('exA').value = 'marta@ex.se'; $('exB').value = 'olle@ex.se'; $('addEx').click();
+    check('exclusion added', state().exclusions.length === 1 && $('exList').children.length === 1);
+
+    $('baseUrl').value = 'https://tomte.example.se/index.html'; $('baseUrl').dispatchEvent(new Event('change'));
+    check('no local-url warning for real url', $('urlWarn').textContent === '');
+
+    // draw many times via the button (double-click confirm) and verify constraints each time
+    let allValid = true;
+    for (let i = 0; i < 40; i++) {
+      $('drawBtn').click(); if (i > 0) $('drawBtn').click();
+      const a = state().draw.assignment;
+      const recvs = Object.values(a);
+      const ok = Object.keys(a).length === 5 && new Set(recvs).size === 5 &&
+        Object.entries(a).every(([g, r]) => g !== r) && a['asa@ex.se'] !== 'bjorn@ex.se' &&
+        a['marta@ex.se'] !== 'olle@ex.se' && a['olle@ex.se'] !== 'marta@ex.se';
+      if (!ok) { allValid = false; break; }
+    }
+    check('40 UI draws satisfy all rules', allValid);
+    check('result card visible', !$('resultCard').hidden && $('resultBody').rows.length === 5);
+    check('assignments hidden by default', [...$('resultBody').rows].every(r => r.cells[1].textContent === '●●●●●'));
+    $('showSecret').click();
+    const st = state();
+    check('toggle reveals names', $('resultBody').rows[0].cells[1].textContent === st.people.find(p => p.email === st.draw.assignment['asa@ex.se']).name);
+    const link = st.draw.links['asa@ex.se'];
+    check('link uses base url + fragment', link.startsWith('https://tomte.example.se/index.html#'));
+    const mail = $('resultBody').rows[0].querySelector('a').href;
+    check('mailto has recipient + link', mail.startsWith('mailto:asa%40ex.se?subject=') && mail.includes(encodeURIComponent(link)));
+    check('no stale warning', $('staleMsg').textContent === '');
+
+    // stale detection
+    $('newName').value = 'Kalle'; $('newEmail').value = 'kalle@ex.se'; $('addForm').requestSubmit();
+    check('stale warning after change', /ändrats/.test($('staleMsg').textContent));
+    $('peopleBody').rows[5].querySelector('button').click();
+    check('stale cleared after revert', $('staleMsg').textContent === '');
+
+    // impossible: exclude Åsa from everyone else
+    for (const e of ['bjorn@ex.se', 'marta@ex.se', 'olle@ex.se', 'lisa@ex.se']) {
+      if (e === 'bjorn@ex.se') continue; // already blocked by last year
+      $('exA').value = 'asa@ex.se'; $('exB').value = e; $('addEx').click();
+    }
+    $('drawBtn').click(); $('drawBtn').click();
+    check('impossible draw reported', /går inte/.test($('drawMsg').textContent) && $('resultCard').hidden);
+    // remove those exclusions again
+    while (state().exclusions.length > 1) $('exList').lastElementChild.querySelector('button').click();
+    $('drawBtn').click();
+    check('draw works again', /Klart/.test($('drawMsg').textContent));
+    const finalState = state();
+
+    // import last year file
+    const file = new File([JSON.stringify({ year: 2025, participants: [{ name: 'Nya Nisse', email: 'nisse@ex.se' }], assignments: [{ giver: 'LISA@ex.se', receiver: 'nisse@ex.se' }, { giver: 'olle@ex.se', receiver: 'asa@ex.se' }] })], 'x.json', { type: 'application/json' });
+    const dt = new DataTransfer(); dt.items.add(file);
+    $('importFile').files = dt.files; $('importFile').dispatchEvent(new Event('change'));
+    await sleep(200);
+    const s2 = state();
+    check('import adds missing participant', s2.people.some(p => p.email === 'nisse@ex.se'));
+    check('import sets last year', s2.people.find(p => p.email === 'lisa@ex.se').lastYear === 'nisse@ex.se' && s2.people.find(p => p.email === 'olle@ex.se').lastYear === 'asa@ex.se');
+    check('import message ok', /2025: 2 kopplingar, 1 nya/.test($('importMsg').textContent), $('importMsg').textContent);
+
+    // persistence across reload
+    w = await load('../admin.html');
+    check('state persists after reload', $('peopleBody').rows.length === 6 && !$('resultCard').hidden);
+
+    // family page with Åsa's link (point to local index)
+    const token = finalState.draw.links['asa@ex.se'].split('#')[1];
+    const expectedRecv = finalState.people.find(p => p.email === finalState.draw.assignment['asa@ex.se']).name;
+    w = await load('../index.html?t=1#' + token);
+    check('greeting shows giver', $('greeting').textContent.includes('Farmor Åsa') && !$('greeting').hidden);
+    check('gift visible, reveal hidden', !$('giftZone').hidden && !$('reveal').classList.contains('show'));
+    $('gift').click();
+    check('reveal shows receiver', $('reveal').classList.contains('show') && $('receiver').textContent === expectedRecv, [$('receiver').textContent, expectedRecv]);
+    check('receiver name not in raw token', !token.includes(btoa(expectedRecv.replace(/[^\x00-\x7f]/g, ''))));
+    await sleep(1600);
+    // Headless virtual time does not advance CSS transitions; fast-forward them to check the end state.
+    f.contentDocument.getAnimations().forEach(a => { try { a.finish(); } catch (e) {} });
+    check('reveal fully visible after animation', getComputedStyle($('reveal')).opacity === '1' && $('reveal').offsetHeight > 100, [getComputedStyle($('reveal')).opacity, $('reveal').offsetHeight]);
+    check('lid gone after animation', getComputedStyle(f.contentDocument.querySelector('.gift .lid')).opacity === '0');
+    check('countdown running', /^\d+$/.test($('cdD').textContent) && +$('cdD').textContent > 0 && /^\d\d$/.test($('cdS').textContent));
+    check('countdown target text', /24 december 2026 (kl\. )?15:00/.test($('cdTarget').textContent), $('cdTarget').textContent);
+    check('rules mention 500 SEK', /500 SEK/.test(f.contentDocument.body.textContent));
+
+    w = await load('../index.html?t=2#trasig-länk');
+    check('broken link message', /fungerar inte/.test($('noLinkTitle').textContent) && $('giftZone').hidden);
+    w = await load('../index.html?t=3');
+    check('no link landing', /Välkommen/.test($('noLinkTitle').textContent) && !$('noLink').hidden);
+  } catch (e) { fail++; out.push('ERROR ' + e.stack); }
+  out.push(pass + ' passed, ' + fail + ' failed');
+  document.getElementById('out').textContent = out.join('\n');
+  document.title = 'DONE';
+})();
+</script>
+</body></html>

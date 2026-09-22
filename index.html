@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Hemlig tomte</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎅</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="snow" aria-hidden="true"></canvas>
+  <main class="wrap">
+    <header class="hero">
+      <span class="hat" aria-hidden="true">🎅</span>
+      <h1>Hemlig tomte <span id="year"></span></h1>
+      <p class="sub">Familjens julklappslotteri</p>
+      <p class="greeting" id="greeting" hidden></p>
+    </header>
+
+    <!-- Personal reveal (valid link) -->
+    <section class="gift-zone" id="giftZone" hidden>
+      <button class="gift" id="gift" type="button" aria-label="Öppna paketet och se vem du ska köpa julklapp till">
+        <span class="box"><span class="ribbon-v"></span></span>
+        <span class="lid"><span class="ribbon-v"></span><span class="bow"></span></span>
+      </button>
+      <p class="hint" id="hint">Klicka på paketet för att se vem du har dragit ✨</p>
+      <div class="reveal" id="reveal" aria-live="polite">
+        <p class="label">Du är hemlig tomte åt</p>
+        <p class="name" id="receiver"></p>
+        <p class="note">Psst… håll det hemligt! 🤫</p>
+      </div>
+    </section>
+
+    <!-- No link / broken link -->
+    <section class="card center" id="noLink" hidden>
+      <h2 id="noLinkTitle">Välkommen, tomtenisse!</h2>
+      <p id="noLinkText">Du behöver din personliga länk för att se vem du ska köpa julklapp till. Kolla din mejl – länken kommer från den som ordnar lottningen.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="center" id="cdTitle">Nedräkning till julafton</h2>
+      <div class="countdown" id="countdown">
+        <div class="tile"><div class="num" id="cdD">–</div><div class="unit">dagar</div></div>
+        <div class="tile"><div class="num" id="cdH">–</div><div class="unit">timmar</div></div>
+        <div class="tile"><div class="num" id="cdM">–</div><div class="unit">minuter</div></div>
+        <div class="tile"><div class="num" id="cdS">–</div><div class="unit">sekunder</div></div>
+      </div>
+      <p class="target" id="cdTarget"></p>
+    </section>
+
+    <section class="card">
+      <h2>Reglerna</h2>
+      <ul class="rules">
+        <li><span class="ico" aria-hidden="true">💰</span><span><b>Max 500 kr.</b> Julklappen får kosta högst <span class="price">500 SEK</span>. Det är omtanken som räknas, inte prislappen.</span></li>
+        <li><span class="ico" aria-hidden="true">🤫</span><span><b>Håll det hemligt.</b> Berätta inte för någon vem du har dragit – inte ens om de frågar snällt.</span></li>
+        <li><span class="ico" aria-hidden="true">🎁</span><span><b>Slå in paketet.</b> Skriv mottagarens namn på paketet, men inte ditt eget. Gärna med ett litet julrim!</span></li>
+        <li><span class="ico" aria-hidden="true">🕒</span><span><b>Ta med julklappen till julafton.</b> Paketen delas ut på julafton, och då får alla gissa vem som var deras tomte.</span></li>
+        <li><span class="ico" aria-hidden="true">🔗</span><span><b>Dela inte din länk.</b> Den är personlig och visar bara vem <i>du</i> ska köpa till.</span></li>
+      </ul>
+    </section>
+
+    <footer>God jul och gott nytt år! 🎄</footer>
+  </main>
+
+  <script src="js/tomte.js"></script>
+  <script src="js/snow.js"></script>
+  <script src="js/family.js"></script>
+</body>
+</html>

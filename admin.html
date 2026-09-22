@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Hemlig tomte – Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎄</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="admin">
+  <canvas id="snow" aria-hidden="true"></canvas>
+  <main class="wrap">
+    <header class="hero">
+      <h1>Hemlig tomte · Admin</h1>
+      <p class="sub">Lägg till familjen, dra lotter och skicka ut länkarna.</p>
+    </header>
+
+    <section class="card">
+      <h2>1. Deltagare</h2>
+      <p class="help">Namn och e-postadress för alla som är med. E-postadressen används för att skilja deltagarna åt.</p>
+      <form id="addForm" class="row" autocomplete="off">
+        <label class="field">Namn<input type="text" id="newName" required maxlength="60" placeholder="t.ex. Farmor Greta"></label>
+        <label class="field">E-post<input type="email" id="newEmail" required maxlength="120" placeholder="greta@exempel.se"></label>
+        <button class="btn primary" type="submit">➕ Lägg till</button>
+      </form>
+      <div class="msg" id="addMsg" role="status"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Namn</th><th>E-post</th><th>Köpte till förra året</th><th><span class="visually-hidden">Ta bort</span></th></tr></thead>
+          <tbody id="peopleBody"></tbody>
+        </table>
+        <p class="empty" id="peopleEmpty">Inga deltagare än.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. Undantag</h2>
+      <p class="help">Par som inte får dra varandra, till exempel sambos. Gäller åt båda hållen.</p>
+      <div class="row">
+        <label class="field">Person<select id="exA"></select></label>
+        <label class="field">får inte dra<select id="exB"></select></label>
+        <button class="btn" type="button" id="addEx">🚫 Lägg till undantag</button>
+      </div>
+      <div class="msg" id="exMsg" role="status"></div>
+      <div class="chips" id="exList"></div>
+    </section>
+
+    <section class="card">
+      <h2>3. Förra årets lottning</h2>
+      <p class="help">Ingen får samma person två år i rad. Välj i kolumnen "Köpte till förra året" ovan, eller importera fjolårets exporterade fil. Saknade deltagare läggs till automatiskt.</p>
+      <label class="btn" for="importFile">📂 Importera fil (.json)</label>
+      <input type="file" id="importFile" accept="application/json,.json" class="visually-hidden">
+      <div class="msg" id="importMsg" role="status"></div>
+    </section>
+
+    <section class="card">
+      <h2>4. Lottning</h2>
+      <div class="row">
+        <label class="field" style="flex:0 1 120px">År<input type="number" id="year" min="2000" max="2100"></label>
+        <label class="field" style="flex:3 1 300px">Adress till familjesidan<input type="url" id="baseUrl" placeholder="https://exempel.se/tomte/index.html"></label>
+      </div>
+      <div class="msg warn" id="urlWarn"></div>
+      <p style="margin-top:18px"><button class="btn gold big" type="button" id="drawBtn">🎲 Dra lottning</button></p>
+      <div class="msg" id="drawMsg" role="status"></div>
+    </section>
+
+    <section class="card" id="resultCard" hidden>
+      <h2>5. Skicka länkarna</h2>
+      <p class="help">Varje person får sin egen länk. Klicka "Mejla" för att öppna ett färdigt mejl, eller kopiera länken och skicka den själv.</p>
+      <div class="msg warn" id="staleMsg"></div>
+      <div class="toolbar">
+        <label class="switch"><input type="checkbox" id="showSecret"> Visa vem som köper till vem</label>
+        <button class="btn" type="button" id="exportBtn">💾 Exportera lottning (spara till nästa år)</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Namn</th><th>Köper till</th><th>Länk</th><th><span class="visually-hidden">Åtgärder</span></th></tr></thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+      <div class="msg" id="resultMsg" role="status"></div>
+    </section>
+
+    <footer>Allt sparas bara i den här webbläsaren. <a href="index.html" style="color:var(--gold-2)">Till familjesidan</a></footer>
+  </main>
+
+  <script src="js/tomte.js"></script>
+  <script src="js/snow.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
